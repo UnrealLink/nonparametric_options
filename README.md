@@ -58,12 +58,14 @@ pip install pandas opencv-python tensorboard
 
 You will also need expert trajectories to run the pretraining. The ones for the environments shown in the paper can be found [here](https://drive.google.com/drive/folders/1oDZjhqrxNh0VqeOmz1M9KWWJuM6NZnj0?usp=sharing). They were generated using the [Uber Atari model zoo](https://github.com/uber-research/atari-model-zoo) Apex model.
 
+The following lines of code assume the trajectories were downloaded in the parent directory of this repository.
+
 ## Run our nonparametric version
 
 Run the pretraining:
 
 ```
-python train.py --env atari --demo-file <path_to_trajectories>/alien/trajectories.npy --max-epochs 1500 --max-steps 300 --random-seed 0 --batch-size 128 --save-dir runs/atari_pretraining_alien 
+python train.py --env atari --demo-file ../trajectories/alien/trajectories.npy --max-epochs 1500 --max-steps 300 --random-seed 0 --batch-size 128 --save-dir runs/atari_pretraining_alien 
 ```
 
 Run the RL training:
@@ -77,7 +79,7 @@ python run_atari_exp.py --pretrained-path runs/atari_pretraining_alien --env-nam
 Run the pretraining.
 
 ```
-python train.py --env atari --demo-file path_to_trajectories/alien/trajectories.npy --max-epochs 1500 --max-steps 300 --random-seed 0 --batch-size 128 --save-dir runs/atari_pretraining_fixed_alien --fixed-options --K 7
+python train.py --env atari --demo-file ../trajectories/alien/trajectories.npy --max-epochs 1500 --max-steps 300 --random-seed 0 --batch-size 128 --save-dir runs/atari_pretraining_fixed_alien --fixed-options --K 7
 ```
 
 Run the RL training.
@@ -99,7 +101,7 @@ To run the pretraining:
 ```
 cd ../compile
 
-python train.py --demo-file path_to_trajectories/alien/trajectories.npy --iterations 1500 --learning-rate 0.001 --latent-dim 7 --num-segments 10 --save-dir runs/atari_pretraining_compile_alien
+python train.py --demo-file ../trajectories/alien/trajectories.npy --iterations 1500 --learning-rate 0.001 --latent-dim 7 --num-segments 10 --save-dir runs/atari_pretraining_compile_alien
 ```
 
 To train the RL agent:
@@ -107,7 +109,7 @@ To train the RL agent:
 ```
 cd ../nonparametric_options
 
-python run_atari_exp.py --demo-file path_to_trajectories/alien/trajectories.npy --pretrained-path runs/atari_pretraining_compile_alien --env-name AlienNoFrameskip-v4 --save-dir ../compile/runs/atari_augmented_compile_alien --training-steps 3000000 --baseline-compile
+python run_atari_exp.py --demo-file ../trajectories/alien/trajectories.npy --pretrained-path runs/atari_pretraining_compile_alien --env-name AlienNoFrameskip-v4 --save-dir ../compile/runs/atari_augmented_compile_alien --training-steps 3000000 --baseline-compile
 ```
 
 ## Run the nonparametric compile baseline
@@ -120,7 +122,7 @@ To run the pretraining:
 cd ../compile
 git checkout compile_np
 
-python train.py --demo-file path_to_trajectories/alien/trajectories.npy --iterations 1500 --learning-rate 0.001 --latent-dim 1 --num-segments 10 --add-option-interval 10 --save-dir runs/atari_pretraining_compilenp_alien
+python train.py --demo-file ../trajectories/alien/trajectories.npy --iterations 1500 --learning-rate 0.001 --latent-dim 1 --num-segments 10 --add-option-interval 10 --save-dir runs/atari_pretraining_compilenp_alien
 ```
 
 To train the RL agent:
@@ -155,7 +157,7 @@ To run the pretraining, use the [ddo_compat]() branch of the repo:
 git checkout ddo_compat
 conda activate ddo_baseline
 
-python train.py --env atari --demo-file path_to_trajectories/alien/trajectories.npy --max-epochs 10000 --K 7 --baseline-ddo --save-dir runs/atari_pretraining_ddo_alien
+python train.py --env atari --demo-file ../trajectories/alien/trajectories.npy --max-epochs 10000 --K 7 --baseline-ddo --save-dir runs/atari_pretraining_ddo_alien
 ```
 
 The stable-baselines3 repository is not compatible with the ddo-baseline repository, so we use a custom pytorch version of ddo to load the trained model to create the augmented environment. 
