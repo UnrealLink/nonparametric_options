@@ -11,7 +11,7 @@ class AtariEnv:
         self.n_traj = len(self.data) if self.data is not None else 0
 
         self.state_dim = 128*8
-        self.action_dim = self.env.action_space.n
+        self.action_dim = 4 if env_name == 'Breakout-ramNoFrameskip-v3' else self.env.action_space.n
     
     def reset(self):
         obs = self.env.reset()
@@ -29,7 +29,7 @@ class AtariEnv:
         # For RAM states
         if self.data is None:
             return None, None, None
-        print(f'Loading {self.n_traj} trajectories...')
+        print('Loading {} trajectories...'.format(self.n_traj))
         data_states = np.zeros([self.n_traj, max_steps, self.state_dim], dtype='float32')
         data_actions = np.zeros([self.n_traj, max_steps - 1, self.action_dim], dtype='float32')
         for i, trajectory in enumerate(self.data):

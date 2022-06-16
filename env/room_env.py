@@ -101,6 +101,6 @@ class RoomEnv:
                 data_rewards[i, t] = reward
         if verbose:
             av_rew = np.mean(np.max(data_rewards, axis=1))
-            print(f'dataset of expert trajectories generated with reward reached {100*av_rew:.2f}% of trajectories')
+            print('dataset of expert trajectories generated with reward reached {}% of trajectories'.format(100*av_rew))
 
         return data_states, data_actions, data_rewards

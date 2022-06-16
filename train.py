@@ -7,6 +7,7 @@ import json
 import random
 import numpy as np
 import torch
+import tensorflow as tf
 
 from bnp_options import *
 from utils import *
@@ -86,6 +87,10 @@ def get_args():
                         help='directory where model and config are saved')
     parser.add_argument('--results-file', type=str, default=None,
                     help='file where results are saved')
+    
+    # Baseline settings
+    parser.add_argument('--baseline-ddo', action="store_true", default=False,
+                        help='train ddo baseline instead of bnp options')
 
     args = parser.parse_args()
     return args
@@ -94,8 +99,6 @@ def get_args():
 def setup_env(args):
     n_rooms = args.nb_rooms
     max_steps = args.max_steps
-    nb_traj = args.nb_traj
-    noise_level = args.noise_level
 
     if args.env_type == 'room':
         env = RoomEnv(rng=rng_env, n_rooms=n_rooms, max_steps=max_steps)
@@ -107,7 +110,7 @@ def setup_env(args):
             env_name = env_name[0].upper() + env_name[1:]
         else:
             env_name = args.atari_env_name
-        env = AtariEnv(f'{env_name}-ramNoFrameskip-v4', path=args.demo_file)
+        env = AtariEnv('{}-ramNoFrameskip-v3'.format(env_name), path=args.demo_file)
         data = env.get_expert_trajectories(max_steps=args.max_steps)
     else:
         raise AssertionError("environment not defined.")
@@ -131,18 +134,37 @@ def split_train_test(data, rng_split, split=0.01):
     return train_data, test_data
 
 
+def train_baseline(trajectories, k, statedim, actiondim,
+          super_iterations=2000, sub_iterations=100, learning_rate=1e-3):
+
+    if type(statedim) != tuple:
+        statedim = (statedim,)
+    if type(actiondim) != tuple:
+        actiondim = (actiondim,)
+    model = AtariRAMModel(k, statedim=statedim, actiondim=actiondim)
+    with tf.variable_scope("optimizer2"):
+        opt = tf.train.AdamOptimizer(learning_rate=0.001)
+        model.sess.run(tf.initialize_all_variables())
+    model.train(opt, trajectories, super_iterations, sub_iterations)
+    return model
+
+
 if __name__ == "__main__":
 
     args = get_args()
     params = vars(args)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+    if args.baseline_ddo:
+        sys.path.append('../segment-centroid')
+        from segmentcentroid.tfmodel.AtariRAMModel import AtariRAMModel
+
     # Creating folder for this run
     os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
     start_time_s = time.time()
-    run_ID = f"{args.env_type}_{datetime.datetime.now().strftime('%b%d_%H-%M-%S')}"
+    run_ID = "{}_{}".format(args.env_type, datetime.datetime.now().strftime('%b%d_%H-%M-%S'))
     if args.save_dir == '':
-        run_dir = f"runs/{run_ID}"
+        run_dir = "runs/{}".format(run_ID)
     else:
         run_dir = args.save_dir
     os.makedirs(run_dir, exist_ok=True)
@@ -167,14 +189,24 @@ if __name__ == "__main__":
     train_data, test_data = split_train_test(data, rng_split)
 
     # Training
-    model = BNPOptions(train_data, env.state_dim, env.action_dim, device, rng=rng_master, **vars(args))
-    model.train()
+    if not args.baseline_ddo:
+        model = BNPOptions(train_data, env.state_dim, env.action_dim, device, rng=rng_master, **vars(args))
+        model.train()
+    else:
+        # Change data format to fit multilevel discovery
+        train_data = [[(state.astype("float64"), action.astype("float64"))
+                       for state, action in zip(states, actions)]
+                      for states, actions in zip(train_data[0], train_data[1])]
+        model = train_baseline(train_data, args.K, env.state_dim, train_data[0][0][1].shape[-1], super_iterations=args.max_epochs)
 
     model.save(os.path.join(run_dir, "checkpoint.pth"))
 
     # Evaluation
-    score = compute_score(model, env, test_data, device)
-    print(f"Achieved a score of {score:.3f}.")
+    if not args.baseline_ddo:
+        score = compute_score(model, env, test_data, device)
+    else:
+        score = compute_score_baseline(model, env, test_data)
+    print("Achieved a score of {}.".format(score))
 
     if args.results_file is not None:
         with open(args.results_file, 'a') as f:
@@ -184,5 +216,5 @@ if __name__ == "__main__":
             f.write(' ')
             f.write(str(model.K))
             f.write(' ')
-            f.write(f"[{' '.join([str(epoch) for epoch in model.new_option_hist])}]")
+            f.write("[{}]".format(' '.join([str(epoch) for epoch in model.new_option_hist])))
             f.write('\n')

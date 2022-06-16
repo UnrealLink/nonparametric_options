@@ -20,11 +20,11 @@ class AugmentedAtariEnv(gym.Wrapper):
 
     def step(self, action):
         self._count_total_actions += 1
-        # frames = []
+        frames = []
         if action < self._base_action_dim:
             steps_count = 1
             obs, reward, done, info = self.env.step(action)
-            # frames.append(self.env.unwrapped.render(mode="rgb_array"))
+            frames.append(self.env.unwrapped.render(mode="rgb_array"))
         else:
             self._count_high_level_actions += 1
             done = False
@@ -37,12 +37,12 @@ class AugmentedAtariEnv(gym.Wrapper):
                     obs=np.unpackbits(self.unwrapped.ale.getRAM())
                 )
                 obs, sub_reward, done, info = self.env.step(sub_action)
-                # frames.append(self.env.unwrapped.render(mode="rgb_array"))
+                frames.append(self.env.unwrapped.render(mode="rgb_array"))
                 reward += self._gamma**(steps_count-1) * sub_reward
                 # if np.random.random() < termination:
                 #     break
         info['steps_count'] = steps_count
-        # info['frames'] = frames
+        info['frames'] = frames
         if self.env.was_real_done:
             info['episode']['hlp'] = self._count_high_level_actions / self._count_total_actions
         return obs, reward, done, info

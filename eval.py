@@ -48,6 +48,38 @@ def compute_score(model, env, test_data, device):
 
     return 0.
 
+def compute_score_baseline(model, env, test_data):
+    if env.env_type == 'room':
+        room_scores = [0]*env.n_rooms
+        for option in range(model.K):
+            for room in range(env.n_rooms):
+                state = [0, 4, -1]
+                action = [0]*(env.n_rooms+1)
+                action[room+1]=1
+                proba = model.evalpi(option, [(state, action)])
+                room_scores[room] = max(room_scores[room], proba)
+        return np.mean(room_scores)
+
+    elif env.env_type == 'atari':
+        score = 0.
+        # Change data format to fit ddo
+        test_data = [[(state.astype("float64"), action.astype("float64"))
+                       for state, action in zip(states, actions)]
+                      for states, actions in zip(test_data[0], test_data[1])]
+
+        all_probs = []
+        for traj in test_data:
+            traj_probs = []
+            for (state, action) in traj:
+                max_prob = float(model.evalpi(0, [(state, action)]))
+                for option in range(1, model.K):
+                    max_prob = max(max_prob, float(model.evalpi(option, [(state, action)])))
+                traj_probs.append(max_prob)
+            all_probs.append(traj_probs)
+        return np.mean(all_probs)
+
+    return 0.
+
 def evaluate_options_usage(model, test_data, device):
     states = torch.tensor(test_data[0])[:, :-1].to(device)
     actions = torch.tensor(test_data[1]).to(device)

@@ -222,7 +222,7 @@ class BNPOptions:
                     self.new_option_hist.append(self.perm.epoch)
                     new_option_counter = 0
                 if verbose:
-                    print(f'Finished epoch {start_epoch}\twith loss: {negative_elbo_np:f}\tand k: {self.K:d}')
+                    print('Finished epoch {}\twith loss: {}\tand k: {}'.format(start_epoch, negative_elbo_np, self.K))
             if is_last:
                 break
 
