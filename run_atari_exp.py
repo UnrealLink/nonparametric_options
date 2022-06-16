@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
     # Import baselines if needed
     if args.baseline_ddo:
-        sys.path.append('../segment-centroid')
+        sys.path.append('../ddo_baseline_pytorch')
         from models.AtariRamModel import AtariRamModel
     if args.baseline_compile:
         sys.path.append('../compile')
